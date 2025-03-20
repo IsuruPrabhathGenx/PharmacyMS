@@ -23,9 +23,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+app.use(cors({
+  origin: 'http://172.31.22.244:3000', // Your frontend URL
+  credentials: true
+}));
 // Middleware
-app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Parse JSON request body
+
+
 
 // Routes
 app.use('/api/auth', authRoutes); // Auth routes
