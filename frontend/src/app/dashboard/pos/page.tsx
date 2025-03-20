@@ -1,4 +1,3 @@
-// src/app/dashboard/pos/page.tsx
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { inventoryService } from '@/services/inventoryService';
@@ -7,7 +6,6 @@ import { saleService } from '@/services/saleService';
 import { InventoryItem } from '@/types/inventory';
 import { BatchWithDetails } from '@/types/purchase';
 import { Sale, SaleItem } from '@/types/sale';
-import DashboardLayout from '@/components/DashboardLayout';
 import { BatchSelector } from './BatchSelector';
 import { QuantityInput } from './QuantityInput';
 import { Cart } from './Cart';
@@ -25,7 +23,9 @@ import {
   CreditCard, 
   ArrowDown, 
   ArrowUp, 
-  Keyboard
+  Keyboard,
+  ArrowLeft,
+  Home
 } from 'lucide-react';
 import { Customer } from '@/types/customer';
 import { CustomerSelector } from './CustomerSelector';
@@ -40,16 +40,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast} from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Toaster } from "sonner";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 import PaymentMethod from './PaymentMethod';
-import ReceiptDialog from './ReceiptDialog';
 import { receiptPrinterService } from '@/services/receiptPrinterService';
 
 export default function POSPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   
   // State management
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -89,6 +92,13 @@ export default function POSPage() {
 
   const [applyDiscount, setApplyDiscount] = useState<boolean>(true);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
+
+  // Check authentication
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
   
   useEffect(() => {
     const loadData = async () => {
@@ -161,6 +171,12 @@ export default function POSPage() {
           duration: 1500,
         });
       }
+
+      // F4 - Return to dashboard
+      if (e.key === 'F4') {
+        e.preventDefault();
+        router.push('/dashboard');
+      }
       
       // Escape - Clear search or selection
       if (e.key === 'Escape') {
@@ -213,6 +229,7 @@ export default function POSPage() {
     cartItems, 
     processing,
     confirmDialogFocused,
+    router
   ]);
   
   // Listen for search term changes to filter results
@@ -558,30 +575,6 @@ export default function POSPage() {
         description: "Transaction processed successfully",
         variant: "success",
       });
-      
-      // // Print receipt directly instead of showing dialog
-      // try {
-      //   await receiptPrinterService.printSaleReceipt(completedSaleData, {
-      //     name: 'Isira Pharmacy & Grocery',
-      //     address: 'No. 371, M.D.H. Jayawardhena Road, Abhayapura, Athuruginya.',
-      //     phone: '0777 846 480',
-      //     footer: 'Get well soon!'
-      //   });
-        
-      //   // Open cash drawer if it's a cash payment
-      //   if (paymentMethod === 'cash') {
-      //     await receiptPrinterService.openCashDrawer();
-      //   }
-      // } catch (error) {
-      //   console.error('Error printing receipt:', error);
-      //   toast({
-      //     title: "Printing Error",
-      //     description: "Could not print receipt. Please try again manually.",
-      //     variant: "destructive",
-      //   });
-      // }
-
-      
 
       // Clear cart and reset all state variables
       setCartItems([]);
@@ -617,259 +610,269 @@ export default function POSPage() {
     }
   };
 
+  const handleBackToDashboard = () => {
+    router.push('/dashboard');
+  };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-full bg-gray-50">
-          <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">Loading POS System...</p>
-          </div>
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Loading POS System...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <div className="h-screen flex flex-col bg-gray-50">
       <Toaster />
-      <div className="h-screen flex flex-col bg-gray-50">
-        {/* Header with improved styling */}
-        <div className="p-4 bg-white border-b shadow-sm">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center">
-              <Store className="h-6 w-6 text-primary mr-2" />
-              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 text-transparent bg-clip-text">
-                Point of Sale
-              </h1>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* Keyboard shortcuts card with badge */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="py-2 cursor-help">
-                      <Keyboard className="w-4 h-4 mr-1" />
-                      <span className="font-medium">Shortcuts</span>
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent className="p-4 w-64">
-                    <div className="space-y-2">
-                      <p className="font-medium text-sm">Keyboard Shortcuts:</p>
-                      <div className="grid grid-cols-2 gap-1 text-xs">
-                        <div className="flex items-center"><Badge variant="secondary" className="mr-1">F1</Badge> Search</div>
-                        <div className="flex items-center"><Badge variant="secondary" className="mr-1">F2</Badge> Finalize Sale</div>
-                        <div className="flex items-center"><Badge variant="secondary" className="mr-1">F5</Badge> Customer</div>
-                        <div className="flex items-center"><Badge variant="secondary" className="mr-1">Esc</Badge> Clear</div>
-                        <div className="flex items-center"><Badge variant="secondary" className="mr-1">↑↓</Badge> Navigate</div>
-                        <div className="flex items-center"><Badge variant="secondary" className="mr-1">Enter</Badge> Select</div>
-                      </div>
+      {/* Header with improved styling */}
+      <div className="p-4 bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center">
+            <Store className="h-6 w-6 text-primary mr-2" />
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 text-transparent bg-clip-text">
+              Point of Sale
+            </h1>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {/* Back to Dashboard Button */}
+            <Button
+              variant="outline"
+              onClick={handleBackToDashboard}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="inline sm:hidden">Dashboard</span>
+              <Badge variant="outline" className="ml-1 hidden md:inline">F4</Badge>
+            </Button>
+
+            {/* Keyboard shortcuts card with badge */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="py-2 cursor-help">
+                    <Keyboard className="w-4 h-4 mr-1" />
+                    <span className="font-medium">Shortcuts</span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="p-4 w-64">
+                  <div className="space-y-2">
+                    <p className="font-medium text-sm">Keyboard Shortcuts:</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div className="flex items-center"><Badge variant="secondary" className="mr-1">F1</Badge> Search</div>
+                      <div className="flex items-center"><Badge variant="secondary" className="mr-1">F2</Badge> Finalize Sale</div>
+                      <div className="flex items-center"><Badge variant="secondary" className="mr-1">F4</Badge> Dashboard</div>
+                      <div className="flex items-center"><Badge variant="secondary" className="mr-1">F5</Badge> Customer</div>
+                      <div className="flex items-center"><Badge variant="secondary" className="mr-1">Esc</Badge> Clear</div>
+                      <div className="flex items-center"><Badge variant="secondary" className="mr-1">↑↓</Badge> Navigate</div>
                     </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
-              {/* Customer Button with improved styling */}
-              <Button
-                variant={selectedCustomer ? "default" : "outline"}
-                onClick={() => setShowCustomerDialog(true)}
-                className="group transition-all duration-300"
-              >
-                <User className={`mr-2 h-4 w-4 ${selectedCustomer ? 'text-primary-foreground' : 'text-primary'}`} />
-                {selectedCustomer ? (
-                  <span className="max-w-[150px] truncate">{selectedCustomer.name}</span>
-                ) : (
-                  <span>Add Customer (F5)</span>
-                )}
-              </Button>
-            </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {/* Customer Button with improved styling */}
+            <Button
+              variant={selectedCustomer ? "default" : "outline"}
+              onClick={() => setShowCustomerDialog(true)}
+              className="group transition-all duration-300"
+            >
+              <User className={`mr-2 h-4 w-4 ${selectedCustomer ? 'text-primary-foreground' : 'text-primary'}`} />
+              {selectedCustomer ? (
+                <span className="max-w-[150px] truncate">{selectedCustomer.name}</span>
+              ) : (
+                <span>Add Customer (F5)</span>
+              )}
+            </Button>
           </div>
         </div>
+      </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - Items */}
-          <div className="w-2/3 flex flex-col">
-            {/* Enhanced Search Bar */}
-            <div className="p-4 bg-white">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-muted-foreground" />
-                </div>
-                
-                <Input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Search items by name or code... (F1)"
-                  className="pl-10 py-6 text-lg"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                
-                {searchTerm && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 h-8 w-8"
-                    onClick={() => {
-                      setSearchTerm('');
-                      searchInputRef.current?.focus();
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-                
-                {/* Animated Search Results Dropdown */}
-                <AnimatePresence>
-                  {searchResults.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[400px] overflow-y-auto"
-                    >
-                      {searchResults.map((item, index) => (
-                        <motion.div
-                          key={item.id}
-                          className={`p-3 cursor-pointer border-l-4 transition-all ${
-                            index === focusedResultIndex 
-                              ? 'bg-primary/10 border-l-primary' 
-                              : 'hover:bg-gray-50 border-l-transparent'
-                          }`}
-                          onClick={() => handleItemSelect(item)}
-                          onMouseEnter={() => setFocusedResultIndex(index)}
-                          whileHover={{ x: 4 }}
-                        >
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-gray-500 flex flex-wrap gap-2 mt-1">
-                            <Badge variant="outline" className="font-normal">
-                              Code: {item.code}
-                            </Badge>
-                            <Badge variant="secondary" className="font-normal">
-                              Type: {item.type}
-                            </Badge>
-                            {item.hasUnitContains && item.unitContains && (
-                              <Badge variant="outline" className="font-normal text-primary">
-                                {item.unitContains.value} {item.unitContains.unit} per unit
-                              </Badge>
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                
-                {/* No Results Found Message */}
-                <AnimatePresence>
-                  {searchTerm && searchResults.length === 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg p-6 text-center"
-                    >
-                      <div className="text-gray-400 flex flex-col items-center">
-                        <Search className="h-10 w-10 mb-2 opacity-50" />
-                        <p className="text-lg font-medium">No items found</p>
-                        <p className="text-sm">
-                          Try a different search term or check the inventory
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel - Items */}
+        <div className="w-2/3 flex flex-col">
+          {/* Enhanced Search Bar */}
+          <div className="p-4 bg-white">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-muted-foreground" />
               </div>
-            </div>
-
-            {/* Dynamic Content Area */}
-            <div className="flex-1 p-4 overflow-y-auto">
-              <AnimatePresence mode="wait">
-                {isLoadingBatches ? (
+              
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search items by name or code... (F1)"
+                className="pl-10 py-6 text-lg"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 h-8 w-8"
+                  onClick={() => {
+                    setSearchTerm('');
+                    searchInputRef.current?.focus();
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {/* Animated Search Results Dropdown */}
+              <AnimatePresence>
+                {searchResults.length > 0 && (
                   <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex justify-center items-center h-full"
-                  >
-                    <div className="text-center">
-                      <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-2" />
-                      <p className="text-gray-600">Loading batch information...</p>
-                    </div>
-                  </motion.div>
-                ) : selectedItem ? (
-                  <motion.div
-                    key="selectedItem"
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-4"
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[400px] overflow-y-auto"
                   >
-                    <Card className="shadow-md border-t-4 border-t-primary">
-                      <CardHeader className="bg-gray-50 rounded-t-lg">
-                        <CardTitle className="text-xl flex items-center justify-between">
-                          <span>{selectedItem.name}</span>
-                          <Badge variant="outline" className="ml-2">
-                            {selectedItem.type}
+                    {searchResults.map((item, index) => (
+                      <motion.div
+                        key={item.id}
+                        className={`p-3 cursor-pointer border-l-4 transition-all ${
+                          index === focusedResultIndex 
+                            ? 'bg-primary/10 border-l-primary' 
+                            : 'hover:bg-gray-50 border-l-transparent'
+                        }`}
+                        onClick={() => handleItemSelect(item)}
+                        onMouseEnter={() => setFocusedResultIndex(index)}
+                        whileHover={{ x: 4 }}
+                      >
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-gray-500 flex flex-wrap gap-2 mt-1">
+                          <Badge variant="outline" className="font-normal">
+                            Code: {item.code}
                           </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-6 p-6">
-                        <BatchSelector
-                          batches={itemBatches}
-                          onSelectBatch={setSelectedBatch}
-                        />
-                        {selectedBatch && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <QuantityInput
-                              item={selectedItem}
-                              batch={selectedBatch}
-                              onQuantityChange={handleQuantityChange}
-                              unitQtyInputRef={unitQtyInputRef}
-                              subUnitQtyInputRef={subUnitQtyInputRef}
-                              onEnterKeyPress={handleQuantityChange}
-                            />
-                          </motion.div>
-                        )}
-                      </CardContent>
-                    </Card>
+                          <Badge variant="secondary" className="font-normal">
+                            Type: {item.type}
+                          </Badge>
+                          {item.hasUnitContains && item.unitContains && (
+                            <Badge variant="outline" className="font-normal text-primary">
+                              {item.unitContains.value} {item.unitContains.unit} per unit
+                            </Badge>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
                   </motion.div>
-                ) : (
+                )}
+              </AnimatePresence>
+              
+              {/* No Results Found Message */}
+              <AnimatePresence>
+                {searchTerm && searchResults.length === 0 && (
                   <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex flex-col items-center justify-center h-full text-center py-10"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg p-6 text-center"
                   >
-                    <div className="bg-primary/10 rounded-full p-6 mb-4">
-                      <Search className="w-12 h-12 text-primary" />
+                    <div className="text-gray-400 flex flex-col items-center">
+                      <Search className="h-10 w-10 mb-2 opacity-50" />
+                      <p className="text-lg font-medium">No items found</p>
+                      <p className="text-sm">
+                        Try a different search term or check the inventory
+                      </p>
                     </div>
-                    <h3 className="text-xl font-medium mb-2">Search for items</h3>
-                    <p className="text-gray-500 max-w-md">
-                      Use the search bar above to find products by name or code. 
-                      You can also use the F1 key for quick access.
-                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           </div>
 
-          {/* Right Panel - Cart */}
-          <div className="w-1/3 flex flex-col p-4 bg-gray-100">
+          {/* Dynamic Content Area */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            <AnimatePresence mode="wait">
+              {isLoadingBatches ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex justify-center items-center h-full"
+                >
+                  <div className="text-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-2" />
+                    <p className="text-gray-600">Loading batch information...</p>
+                  </div>
+                </motion.div>
+              ) : selectedItem ? (
+                <motion.div
+                  key="selectedItem"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <Card className="shadow-md border-t-4 border-t-primary">
+                    <CardHeader className="bg-gray-50 rounded-t-lg">
+                      <CardTitle className="text-xl flex items-center justify-between">
+                        <span>{selectedItem.name}</span>
+                        <Badge variant="outline" className="ml-2">
+                          {selectedItem.type}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6 p-6">
+                      <BatchSelector
+                        batches={itemBatches}
+                        onSelectBatch={setSelectedBatch}
+                      />
+                      {selectedBatch && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <QuantityInput
+                            item={selectedItem}
+                            batch={selectedBatch}
+                            onQuantityChange={handleQuantityChange}
+                            unitQtyInputRef={unitQtyInputRef}
+                            subUnitQtyInputRef={subUnitQtyInputRef}
+                            onEnterKeyPress={handleQuantityChange}
+                          />
+                        </motion.div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center justify-center h-full text-center py-10"
+                >
+                  <div className="bg-primary/10 rounded-full p-6 mb-4">
+                    <Search className="w-12 h-12 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-medium mb-2">Search for items</h3>
+                  <p className="text-gray-500 max-w-md">
+                    Use the search bar above to find products by name or code. 
+                    You can also use the F1 key for quick access.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
-
+        {/* Right Panel - Cart */}
+        <div className="w-1/3 flex flex-col p-4 bg-gray-100">
           {selectedCustomer && selectedCustomer.discountPercentage > 0 && (
             <div className="p-3 border-t">
               <div className="flex items-center justify-between mb-2">
@@ -894,216 +897,197 @@ export default function POSPage() {
             </div>
           )}
             
-
-
-            <Card className="flex-1 shadow-md border-t-4 border-t-secondary rounded-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-gray-50 rounded-t-md">
-                <CardTitle className="text-xl flex items-center">
-                  <ShoppingCart className="h-5 w-5 mr-2 text-secondary" />
-                  Cart
-                  {cartItems.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {cartItems.length}
-                    </Badge>
-                  )}
-                </CardTitle>
-                
-                <Button
-                  size="lg"
-                  onClick={() => setShowConfirmDialog(true)}
-                  disabled={cartItems.length === 0 || processing}
-                  className="text-base py-5 bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:shadow-lg transition-all duration-300"
-                >
-                  {cartItems.length > 0 ? (
-                    <div className="flex items-center">
-                      <span>Finalize Sale (F2)</span>
-                      <ArrowDown className="ml-2 h-4 w-4" />
-                    </div>
-                  ) : (
-                    <span>Cart Empty</span>
-                  )}
-                </Button>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-5rem)] overflow-y-auto p-0">
-              <Cart
-                items={cartItems}
-                onRemoveItem={removeCartItem}
-                selectedCustomer={selectedCustomer}
-                applyDiscount={applyDiscount}
-                onToggleDiscount={setApplyDiscount}
-                discountAmount={discountAmount}
-              />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Sale Confirmation Dialog */}
-        <Dialog 
-          open={showConfirmDialog} 
-          onOpenChange={(open) => {
-            setShowConfirmDialog(open);
-            // Make sure to reset the focus state when the dialog is closed
-            if (!open) {
-              setConfirmDialogFocused(false);
+          <Card className="flex-1 shadow-md border-t-4 border-t-secondary rounded-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-gray-50 rounded-t-md">
+              <CardTitle className="text-xl flex items-center">
+                <ShoppingCart className="h-5 w-5 mr-2 text-secondary" />
+                Cart
+                {cartItems.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {cartItems.length}
+                  </Badge>
+                )}
+              </CardTitle>
               
-              // Focus back on search input when dialog closes
-              setTimeout(() => {
-                if (searchInputRef.current) {
-                  searchInputRef.current.focus();
-                }
-              }, 100);
-            }
-          }}
-        >
-          <DialogContent className="sm:max-w-[600px] rounded-lg p-0 overflow-hidden">
-            <DialogHeader className="bg-gradient-to-r from-primary to-primary/80 p-6 text-white">
-              <DialogTitle className="text-2xl font-bold">Confirm Sale</DialogTitle>
-            </DialogHeader>
-            <div className="p-6 space-y-6">
-              <div className="text-lg space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="font-medium">Sale Summary</p>
-                  <p className="text-xl font-semibold text-primary">
-                    Rs{cartItems.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}
-                  </p>
-                </div>
-                
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Items:</span>
-                    <span>{cartItems.length}</span>
+              <Button
+                size="lg"
+                onClick={() => setShowConfirmDialog(true)}
+                disabled={cartItems.length === 0 || processing}
+                className="text-base py-5 bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:shadow-lg transition-all duration-300"
+              >
+                {cartItems.length > 0 ? (
+                  <div className="flex items-center">
+                    <span>Finalize Sale (F2)</span>
+                    <ArrowDown className="ml-2 h-4 w-4" />
                   </div>
-                  
-                  {selectedCustomer && (
-                    <div className="flex justify-between text-sm text-gray-600 items-center">
-                      <span>Customer:</span>
-                      <Badge variant="outline" className="font-normal">
-                        {selectedCustomer.name}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="border-t pt-4">
-                <PaymentMethod
-                  totalAmount={cartItems.reduce((sum, item) => sum + item.totalPrice, 0)}
-                  onPaymentMethodChange={handlePaymentMethodChange}
-                  onPressEnter={() => {
-                    // Only proceed if all conditions are met
-                    if (!processing && 
-                        (paymentMethod !== 'bank_deposit' || 
-                        (paymentMethod === 'bank_deposit' && selectedBankAccount))) {
-                      handleFinalizeSale();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            <DialogFooter className="p-6 border-t bg-gray-50">
-              <div className="flex space-x-3 w-full">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setShowConfirmDialog(false)}
-                  disabled={processing}
-                  className="flex-1 py-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={handleFinalizeSale}
-                  disabled={processing || (paymentMethod === 'bank_deposit' && !selectedBankAccount)}
-                  className="flex-1 py-6 bg-gradient-to-r from-primary to-primary/80"
-                >
-                  {processing ? (
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      <span>Processing...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <CreditCard className="mr-2 h-5 w-5" />
-                      <span>Complete Payment</span>
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                ) : (
+                  <span>Cart Empty</span>
+                )}
+              </Button>
+            </CardHeader>
+            <CardContent className="h-[calc(100%-5rem)] overflow-y-auto p-0">
+            <Cart
+              items={cartItems}
+              onRemoveItem={removeCartItem}
+              selectedCustomer={selectedCustomer}
+              applyDiscount={applyDiscount}
+              onToggleDiscount={setApplyDiscount}
+              discountAmount={discountAmount}
+            />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-        {/* Customer Selection Dialog */}
-        <Dialog 
-          open={showCustomerDialog} 
-          onOpenChange={(open) => {
-            setShowCustomerDialog(open);
+      {/* Sale Confirmation Dialog */}
+      <Dialog 
+        open={showConfirmDialog} 
+        onOpenChange={(open) => {
+          setShowConfirmDialog(open);
+          // Make sure to reset the focus state when the dialog is closed
+          if (!open) {
+            setConfirmDialogFocused(false);
+            
             // Focus back on search input when dialog closes
-            if (!open) {
-              setTimeout(() => {
-                searchInputRef.current?.focus();
-              }, 100);
-            }
-          }}
-        >
-          <DialogContent className="max-w-2xl p-0 rounded-lg overflow-hidden">
-            <DialogHeader className="bg-gradient-to-r from-secondary to-secondary/80 p-6 text-white">
-              <DialogTitle className="text-xl font-bold">Select Customer (F5)</DialogTitle>
-            </DialogHeader>
-            <div className="p-6">
-              <CustomerSelector
-                selectedCustomer={selectedCustomer}
-                onSelectCustomer={(customer) => {
-                  setSelectedCustomer(customer);
-                  setShowCustomerDialog(false);
-                  
-                  if (customer) {
-                    toast({
-                      title: "Customer Selected",
-                      description: `${customer.name} added to sale`,
-                      variant: "success",
-                    });
-                  }
-                  
-                  // Focus back on search input after selection
-                  setTimeout(() => {
-                    searchInputRef.current?.focus();
-                  }, 100);
-                }}
-                autoFocusSearch={true}
-              />
-            </div>
-            <div className="bg-gray-50 p-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium mb-1">Keyboard shortcuts:</p>
-                <div className="grid grid-cols-2 gap-1 text-xs">
-                  <div className="flex items-center"><Badge variant="secondary" className="mr-1">↑↓</Badge> Navigate</div>
-                  <div className="flex items-center"><Badge variant="secondary" className="mr-1">Enter</Badge> Select</div>
-                  <div className="flex items-center"><Badge variant="secondary" className="mr-1">Esc</Badge> Cancel</div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Receipt Dialog */}
-        {/* <ReceiptDialog
-          open={showReceiptDialog}
-          onOpenChange={setShowReceiptDialog}
-          sale={completedSale}
-          onClose={() => {
-            setShowReceiptDialog(false);
-            // Focus back on search input after closing receipt
             setTimeout(() => {
               if (searchInputRef.current) {
                 searchInputRef.current.focus();
               }
             }, 100);
-          }}
-        /> */}
-      </div>
-    </DashboardLayout>
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px] rounded-lg p-0 overflow-hidden">
+          <DialogHeader className="bg-gradient-to-r from-primary to-primary/80 p-6 text-white">
+            <DialogTitle className="text-2xl font-bold">Confirm Sale</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 space-y-6">
+            <div className="text-lg space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="font-medium">Sale Summary</p>
+                <p className="text-xl font-semibold text-primary">
+                  Rs{cartItems.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>Items:</span>
+                  <span>{cartItems.length}</span>
+                </div>
+                
+                {selectedCustomer && (
+                  <div className="flex justify-between text-sm text-gray-600 items-center">
+                    <span>Customer:</span>
+                    <Badge variant="outline" className="font-normal">
+                      {selectedCustomer.name}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="border-t pt-4">
+              <PaymentMethod
+                totalAmount={cartItems.reduce((sum, item) => sum + item.totalPrice, 0)}
+                onPaymentMethodChange={handlePaymentMethodChange}
+                onPressEnter={() => {
+                  // Only proceed if all conditions are met
+                  if (!processing && 
+                      (paymentMethod !== 'bank_deposit' || 
+                      (paymentMethod === 'bank_deposit' && selectedBankAccount))) {
+                    handleFinalizeSale();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="p-6 border-t bg-gray-50">
+            <div className="flex space-x-3 w-full">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowConfirmDialog(false)}
+                disabled={processing}
+                className="flex-1 py-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleFinalizeSale}
+                disabled={processing || (paymentMethod === 'bank_deposit' && !selectedBankAccount)}
+                className="flex-1 py-6 bg-gradient-to-r from-primary to-primary/80"
+              >
+                {processing ? (
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    <span>Complete Payment</span>
+                  </div>
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Selection Dialog */}
+      <Dialog 
+        open={showCustomerDialog} 
+        onOpenChange={(open) => {
+          setShowCustomerDialog(open);
+          // Focus back on search input when dialog closes
+          if (!open) {
+            setTimeout(() => {
+              searchInputRef.current?.focus();
+            }, 100);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl p-0 rounded-lg overflow-hidden">
+          <DialogHeader className="bg-black from-secondary to-secondary/80 p-6 text-white">
+            <DialogTitle className="text-xl font-bold">Select Customer (F5)</DialogTitle>
+          </DialogHeader>
+          <div className="p-6">
+            <CustomerSelector
+              selectedCustomer={selectedCustomer}
+              onSelectCustomer={(customer) => {
+                setSelectedCustomer(customer);
+                setShowCustomerDialog(false);
+                
+                if (customer) {
+                  toast({
+                    title: "Customer Selected",
+                    description: `${customer.name} added to sale`,
+                    variant: "success",
+                  });
+                }
+                
+                // Focus back on search input after selection
+                setTimeout(() => {
+                  searchInputRef.current?.focus();
+                }, 100);
+              }}
+              autoFocusSearch={true}
+            />
+          </div>
+          <div className="bg-gray-50 p-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium mb-1">Keyboard shortcuts:</p>
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <div className="flex items-center"><Badge variant="secondary" className="mr-1">↑↓</Badge> Navigate</div>
+                <div className="flex items-center"><Badge variant="secondary" className="mr-1">Enter</Badge> Select</div>
+                <div className="flex items-center"><Badge variant="secondary" className="mr-1">Esc</Badge> Cancel</div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

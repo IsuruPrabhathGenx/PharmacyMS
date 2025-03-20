@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // !! WARN !!
+    // !! WARN !! 
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
     // !! WARN !!
@@ -21,16 +21,17 @@ const nextConfig: NextConfig = {
       ...config.resolve.fallback,
       fs: false,
     };
-  // webpack: (config) => {
-  //   config.resolve.alias = {
-  //     ...config.resolve.alias,
-  //     // This is to handle xlsx dependency
-  //     stream: 'stream-browserify',
-  //     crypto: 'crypto-browserify'
-  //   };
     return config;
   },
-  
+  // Add API rewrites to proxy requests to backend server
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/:path*`
+      }
+    ];
+  },
 };
 
 export default nextConfig;

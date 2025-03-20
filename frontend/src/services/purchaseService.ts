@@ -593,7 +593,7 @@
 // src/services/purchaseService.ts
 import { Purchase, PurchaseWithDetails, BatchWithDetails, Batch, PurchaseItem } from '@/types/purchase';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes

@@ -15,6 +15,7 @@ const expenseRoutes = require('./routes/expenses');
 const expenseCategoryRoutes = require('./routes/expenseCategories');
 const financialReportRoutes = require('./routes/financialReports');
 const dashboardRoutes = require('./routes/dashboard');
+const authRoutes = require('./routes/auth'); // Added auth routes
 
 // Load environment variables
 dotenv.config();
@@ -23,11 +24,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors(
-)); // Enable CORS for all routes
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Parse JSON request body
 
 // Routes
+app.use('/api/auth', authRoutes); // Auth routes
 app.use('/api/customers', customerRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/inventory', inventoryRoutes);
@@ -40,7 +41,6 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/expense-categories', expenseCategoryRoutes);
 app.use('/api/financial-reports', financialReportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-
 
 // Health check route
 app.get('/health', (req, res) => {

@@ -64,7 +64,7 @@
 // src/services/inventoryService.ts
 import { InventoryItem } from '@/types/inventory';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const inventoryService = {
   async create(item: Omit<InventoryItem, 'id' | '_id' | 'createdAt' | 'updatedAt'>) {

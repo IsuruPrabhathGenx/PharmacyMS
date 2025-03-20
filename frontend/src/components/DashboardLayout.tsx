@@ -1,8 +1,6 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { 
@@ -29,7 +27,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import NotificationsDropdown from './NotificationsDropdown';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,14 +38,13 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-import { AuthUser } from '@/types/user';
-
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -58,6 +55,12 @@ export default function DashboardLayout({
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Handle logout with our custom auth service
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
 
   if (!isMounted) {
     return null;
@@ -92,7 +95,7 @@ export default function DashboardLayout({
     },
     { href: '/dashboard/customers', label: 'Customers', icon: Users, color: 'from-blue-500 to-indigo-600' },
     { href: '/dashboard/pos', label: 'Point of Sale', icon: ShoppingCart, color: 'from-rose-500 to-pink-500' },
-    { href: '/dashboard/expences', label: 'Expenses', icon: Calculator, color: 'from-yellow-400 to-amber-500' },
+    { href: '/dashboard/expenses', label: 'Expenses', icon: Calculator, color: 'from-yellow-400 to-amber-500' },
     { href: '/dashboard/bank-accounts', label: 'Bank Accounts', icon: Package, color: 'from-teal-500 to-cyan-500' },
     {
       label: 'Reports',
@@ -197,6 +200,16 @@ export default function DashboardLayout({
     );
   };
 
+  // Get user's initials for the avatar
+  const getUserInitial = () => {
+    if (user?.username) {
+      return user.username[0].toUpperCase();
+    } else if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50/30 to-violet-50/30 overflow-hidden">
       {/* Mobile menu backdrop */}
@@ -239,25 +252,10 @@ export default function DashboardLayout({
           {menuItems.filter(item => !!item.icon).map(renderMenuItem)}
         </nav>
         
-        {/* Help button
-        <div className="p-4 mb-4">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 flex flex-col align-center">
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="rounded-lg p-2 bg-gradient-to-br from-blue-500 to-indigo-600">
-                <HelpCircle className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="font-semibold text-gray-800">Need Help?</h3>
-            </div>
-            <Button className="w-half bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-md">
-              Contact Support
-            </Button>
-          </div>
-        </div> */}
-        
         {/* Logout button at bottom */}
         <div className="p-4 border-t border-blue-100">
           <button
-            onClick={() => signOut(auth)}
+            onClick={handleLogout}
             className="flex w-full items-center rounded-xl px-4 py-3 text-gray-700 transition-all duration-200
               hover:bg-red-50 hover:text-red-600 space-x-3"
           >
@@ -315,11 +313,11 @@ export default function DashboardLayout({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="rounded-xl flex items-center space-x-2 hover:bg-blue-50 transition-colors duration-200">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium shadow-lg">
-                      {user?.email?.[0].toUpperCase()}
+                      {getUserInitial()}
                     </div>
                     <div className="hidden md:block text-left">
-                      <p className="text-sm font-medium">{user?.displayName || user?.email}</p>
-                      <p className="text-xs text-gray-500">Administrator</p>
+                      <p className="text-sm font-medium">{user?.username || user?.email || 'User'}</p>
+                      <p className="text-xs text-gray-500">{user?.role || 'User'}</p>
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-500 hidden md:block" />
                   </Button>
@@ -327,11 +325,11 @@ export default function DashboardLayout({
                 <DropdownMenuContent align="end" className="w-56 mt-1 rounded-xl p-2">
                   <div className="flex items-center space-x-3 p-2">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium">
-                      {user?.email?.[0].toUpperCase()}
+                      {getUserInitial()}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{user?.displayName || 'User'}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      <p className="text-sm font-medium">{user?.username || 'User'}</p>
+                      <p className="text-xs text-gray-500">{user?.email || 'user@example.com'}</p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />
@@ -346,7 +344,7 @@ export default function DashboardLayout({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     className="rounded-lg cursor-pointer text-red-600 focus:text-red-700"
-                    onClick={() => signOut(auth)}
+                    onClick={handleLogout}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout

@@ -1,7 +1,7 @@
 // src/services/bankAccountService.ts
 import { BankAccount } from '@/types/bankAccount';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const bankAccountService = {
   async getAll(): Promise<BankAccount[]> {

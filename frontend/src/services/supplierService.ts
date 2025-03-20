@@ -59,7 +59,7 @@
 // Frontend: services/supplierService.ts
 import { Supplier } from '@/types/supplier';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const supplierService = {
   async create(supplier: Omit<Supplier, 'id' | '_id' | 'createdAt' | 'updatedAt'>) {

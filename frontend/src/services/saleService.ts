@@ -298,7 +298,7 @@ import { Sale, SaleItem } from '@/types/sale';
 import { Customer } from '@/types/customer';
 import { purchaseService } from './purchaseService';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const saleService = {
   async create(sale: any) {

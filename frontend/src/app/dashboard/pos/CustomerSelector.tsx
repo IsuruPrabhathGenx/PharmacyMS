@@ -98,7 +98,7 @@ export function CustomerSelector({
     if (!searchQuery) return true; // Show all customers when no search query
     
     const searchLower = searchQuery.toLowerCase().trim();
-    const nameMatch = customer.name.toLowerCase().includes(searchLower);
+    const nameMatch = customer.name?.toLowerCase().includes(searchLower);
     const mobileMatch = customer.mobile?.toLowerCase().includes(searchLower);
     
     return nameMatch || mobileMatch;
@@ -227,59 +227,64 @@ export function CustomerSelector({
               )}
             </motion.div>
           ) : (
-            filteredCustomers.map((customer, index) => (
-              <motion.div
-                key={customer.id}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.2, delay: index * 0.03 }}
-                className={`p-4 cursor-pointer border rounded-md transition-all ${
-                  index === focusedIndex 
-                    ? 'bg-primary/10 border-primary shadow-sm' 
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => {
-                  onSelectCustomer(customer);
-                  setSearchQuery('');
-                }}
-                onMouseEnter={() => setFocusedIndex(index)}
-                whileHover={{ x: 4 }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-medium flex items-center">
-                      <User className="h-4 w-4 mr-1.5 text-primary" />
-                      {customer.name}
-                      {customer.discountPercentage ? (
-                        <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700 border-green-200">
-                          {customer.discountPercentage}% Discount
-                        </Badge>
-                      ) : null}
+            filteredCustomers.map((customer, index) => {
+              // Ensure we have a unique key by using the customer ID or a fallback unique key
+              const uniqueKey = customer.id || `customer-${index}-${customer.name}-${Date.now()}`;
+              
+              return (
+                <motion.div
+                  key={uniqueKey}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.2, delay: index * 0.03 }}
+                  className={`p-4 cursor-pointer border rounded-md transition-all ${
+                    index === focusedIndex 
+                      ? 'bg-primary/10 border-primary shadow-sm' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                  onClick={() => {
+                    onSelectCustomer(customer);
+                    setSearchQuery('');
+                  }}
+                  // Remove onMouseEnter to prevent constant rerendering
+                  whileHover={{ x: 4 }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium flex items-center">
+                        <User className="h-4 w-4 mr-1.5 text-primary" />
+                        {customer.name}
+                        {customer.discountPercentage ? (
+                          <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700 border-green-200">
+                            {customer.discountPercentage}% Discount
+                          </Badge>
+                        ) : null}
+                      </div>
+                      {customer.mobile && (
+                        <div className="text-sm text-muted-foreground mt-1 flex items-center">
+                          <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                          {customer.mobile}
+                        </div>
+                      )}
+                      {customer.address && (
+                        <div className="text-xs text-gray-500 mt-1 flex items-start">
+                          <MapPin className="h-3 w-3 mr-1.5 text-gray-400 mt-0.5" />
+                          <span className="line-clamp-2">{customer.address}</span>
+                        </div>
+                      )}
                     </div>
-                    {customer.mobile && (
-                      <div className="text-sm text-muted-foreground mt-1 flex items-center">
-                        <Phone className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                        {customer.mobile}
-                      </div>
-                    )}
-                    {customer.address && (
-                      <div className="text-xs text-gray-500 mt-1 flex items-start">
-                        <MapPin className="h-3 w-3 mr-1.5 text-gray-400 mt-0.5" />
-                        <span className="line-clamp-2">{customer.address}</span>
-                      </div>
+                    
+                    {index === focusedIndex && (
+                      <Badge variant="secondary" className="flex items-center">
+                        <span className="mr-1">Select</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Badge>
                     )}
                   </div>
-                  
-                  {index === focusedIndex && (
-                    <Badge variant="secondary" className="flex items-center">
-                      <span className="mr-1">Select</span>
-                      <ArrowRight className="h-3 w-3" />
-                    </Badge>
-                  )}
-                </div>
-              </motion.div>
-            ))
+                </motion.div>
+              );
+            })
           )}
         </AnimatePresence>
       </div>
@@ -312,7 +317,7 @@ export function CustomerSelector({
 
       <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
         <DialogContent className="max-w-md p-0 rounded-lg overflow-hidden">
-          <DialogHeader className="bg-gradient-to-r from-primary to-primary/80 p-6 text-white">
+          <DialogHeader className="bg-black p-6 text-white">
             <DialogTitle className="text-xl font-bold flex items-center">
               <UserPlus className="mr-2 h-5 w-5" />
               Add New Customer
