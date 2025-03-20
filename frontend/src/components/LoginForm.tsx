@@ -139,13 +139,15 @@ export default function LoginForm() {
       setError('Please enter both email and password');
       return;
     }
-
+  
     try {
       setIsLoading(true);
+      console.log('Attempting login with:', { email });
       await login(email, password);
       router.push('/dashboard/pos');
     } catch (error) {
-      setError(error.message);
+      console.error('Login error in component:', error);
+      setError(error.message || 'An unknown error occurred during login');
     } finally {
       setIsLoading(false);
     }
